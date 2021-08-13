@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.10.2)
 project("nginxlivepusher")
 
 # 引入子CMakeLists.txt
-add_subdirectory(src/main/cpp/librtmp)
+add_subdirectory(${CMAKE_SOURCE_DIR}/librtmp)
 
 add_library( 
         nginxlivepusher
