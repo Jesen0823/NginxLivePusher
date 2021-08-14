@@ -31,7 +31,7 @@ class LivePusher(
     }
 
     fun startLive(address: String) {
-        native_start()
+        native_start(address)
         videoChannel.startLive()
         audioChannel.startLive()
     }
