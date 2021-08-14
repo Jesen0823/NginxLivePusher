@@ -56,6 +56,7 @@ void *start(void *args){
     // 直播开始的时间
     start_time = RTMP_GetTime();
     readyPushing = 1; //可以开始推流了
+    packetQueue.setWork(1);
     RTMPPacket *packet = 0;
     while (readyPushing){
         // 队列中取数据(packet)
@@ -83,6 +84,7 @@ void *start(void *args){
         RTMP_Free(rtmp);
     }
     delete (url);
+    return 0;
 }
 
 extern "C" JNIEXPORT jstring JNICALL

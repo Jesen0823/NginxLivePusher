@@ -21,7 +21,7 @@ void VideoChannelC::sendFrame(int type, uint8_t *payload, int i_payload) {
     //
     RTMPPacket_Alloc(packet, bodySize);
 
-    packet->m_body[0] = 0x27;
+    packet->m_body[0] = 0x27; // 非关键帧
     if(type == NAL_SLICE_IDR){
         packet->m_body[0] = 0x17;
         LOGE("sendFrame 关键帧");
@@ -145,7 +145,7 @@ void VideoChannelC::encodeData(int8_t *data){
             memcpy(pps, pp_nal[i].p_payload + 4, pps_len);
             // 单独发送sps,pps
             sendSpsPps(sps, pps, sps_len, pps_len);
-        } else { // 非关键帧
+        } else { // 非关键帧和关键帧的数据，关键帧的sps，PPS上面已经单独发送
             sendFrame(pp_nal[i].i_type, pp_nal[i].p_payload, pp_nal[i].i_payload);
         }
     }
