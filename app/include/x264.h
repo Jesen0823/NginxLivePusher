@@ -25,6 +25,7 @@
  * For more information, contact us at licensing@x264.com.
  *****************************************************************************/
 
+#include <stdint.h>
 #ifndef X264_X264_H
 #define X264_X264_H
 
@@ -40,7 +41,6 @@ extern "C" {
 #  warning You must include stdint.h or inttypes.h before x264.h
 # endif
 #endif
-
 #include <stdarg.h>
 
 #include "x264_config.h"

@@ -5,6 +5,49 @@
 #include <pty.h>
 #include <cstring>
 #include "video_channel.h"
+#include "macro.h"
+
+void VideoChannelC::sendFrame(int type, uint8_t *payload, int i_payload) {
+    if (payload[2] == 0x00) {
+        i_payload -= 4;
+        payload += 4;
+    } else {
+        i_payload -= 3;
+        payload += 3;
+    }
+    //看表
+    int bodySize = 9 + i_payload;
+    RTMPPacket *packet = new RTMPPacket;
+    //
+    RTMPPacket_Alloc(packet, bodySize);
+
+    packet->m_body[0] = 0x27;
+    if(type == NAL_SLICE_IDR){
+        packet->m_body[0] = 0x17;
+        LOGE("sendFrame 关键帧");
+    }
+    //类型
+    packet->m_body[1] = 0x01;
+    //时间戳
+    packet->m_body[2] = 0x00;
+    packet->m_body[3] = 0x00;
+    packet->m_body[4] = 0x00;
+    //数据长度 int 4个字节
+    packet->m_body[5] = (i_payload >> 24) & 0xff;
+    packet->m_body[6] = (i_payload >> 16) & 0xff;
+    packet->m_body[7] = (i_payload >> 8) & 0xff;
+    packet->m_body[8] = (i_payload) & 0xff;
+
+    //图片数据
+    memcpy(&packet->m_body[9], payload, i_payload);
+
+    packet->m_hasAbsTimestamp = 0;
+    packet->m_nBodySize = bodySize;
+    packet->m_packetType = RTMP_PACKET_TYPE_VIDEO;
+    packet->m_nChannel = 0x10;
+    packet->m_headerType = RTMP_PACKET_SIZE_LARGE;
+    videoCallback(packet);
+}
 
 void VideoChannelC::setVideoEncInfo(int width, int height, int fps, int bitrate) {
     mWidth = width;
