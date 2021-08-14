@@ -23,20 +23,35 @@ class LivePusher(
     }
 
     fun setPreviewDisplay(surfaceHolder: SurfaceHolder) {
-
+        videoChannel.setPreviewDisplay(surfaceHolder)
     }
 
     fun switchCamera() {
-
+        videoChannel.switchCamera()
     }
 
     fun startLive(address: String) {
-
+        native_start()
+        videoChannel.startLive()
+        audioChannel.startLive()
     }
 
+
     fun release() {
+        audioChannel.release()
+        videoChannel.release()
+        native_release()
     }
 
     external fun native_init()
+    external fun native_start()
+    external fun native_setVideoEncInfo(width: Int, height: Int, fps: Int, bitrate: Int)
+    external fun native_start(path: String)
+    external fun native_pushVideo(data: ByteArray)
+    external fun native_pushAudio(bytes: ByteArray)
+    external fun native_setAudioEncInfo(i: Int, channels: Int)
 
+    external fun getInputSamples(): Int
+
+    external fun native_release()
 }
