@@ -92,10 +92,21 @@ Java_com_jesen_nginxlivepusher_MainActivity_stringFromJNI(
     std::string hello = "Hello from C++";
     return env->NewStringUTF(hello.c_str());
 }
+
+void callback(RTMPPacket *packet){
+    if (packet){
+        // 设置时间戳
+        packet->m_nTimeStamp = RTMP_GetTime() - start_time;
+        // 加入队列
+        packetQueue.put(packet);
+    }
+}
+
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_jesen_nginxlivepusher_av_LivePusher_native_1init(JNIEnv *env, jobject thiz) {
     videoChannel = new VideoChannelC;
+    videoChannel->setVideoCallback(callback);
 
 }
 extern "C"
@@ -135,8 +146,15 @@ Java_com_jesen_nginxlivepusher_av_LivePusher_native_1start__Ljava_lang_String_2(
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_jesen_nginxlivepusher_av_LivePusher_native_1pushVideo(JNIEnv *env, jobject thiz,
-                                                               jbyteArray data) {
-    // TODO: implement native_pushVideo()
+                                                               jbyteArray data_) {
+    if (!videoChannel || !readyPushing){
+        return;
+    }
+    jbyte *data = env->GetByteArrayElements(data_,NULL);
+
+    videoChannel->encodeData(data);
+
+    env->ReleaseByteArrayElements(data_,data,0);
 }
 extern "C"
 JNIEXPORT void JNICALL

@@ -8,6 +8,8 @@
 #include "librtmp//rtmp.h"
 
 class VideoChannelC {
+    // 接口VideoCallback 传参类型RTMPPacket
+    // 作用：传递packet,以便将packet加入队列
     typedef void (*VideoCallback)(RTMPPacket *packet);
 
 public:

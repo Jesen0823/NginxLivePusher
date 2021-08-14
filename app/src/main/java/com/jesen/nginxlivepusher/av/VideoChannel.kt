@@ -4,6 +4,7 @@ import android.app.Activity
 import android.hardware.Camera
 import android.util.Log
 import android.view.SurfaceHolder
+import com.jesen.nginxlivepusher.util.OLog
 
 class VideoChannel(
     livePusher: LivePusher,
@@ -20,7 +21,7 @@ class VideoChannel(
 
     //data   nv21
     override fun onPreviewFrame(data: ByteArray?, camera: Camera?) {
-        Log.i(TAG, "onPreviewFrame: ")
+        OLog.d(TAG+", onPreviewFrame: ")
         if (isLiving) {
             if (data != null) {
                 livePusher.native_pushVideo(data)

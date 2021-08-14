@@ -59,3 +59,103 @@ void VideoChannelC::setVideoEncInfo(int width, int height, int fps, int bitrate)
     pic_in = new x264_picture_t;
     x264_picture_alloc(pic_in, X264_CSP_I420, width, height);
 }
+
+void VideoChannelC::setVideoCallback(VideoCallback videoCallback) {
+    this->videoCallback = videoCallback;
+}
+
+// 解码视频
+void VideoChannelC::encodeData(int8_t *data){
+    // 数据转换 格式：NV21 = >yuv420，数据：pic_in => img.plane
+    // y数据
+    memcpy(pic_in->img.plane[0], data, ySize);
+    for (int i = 0; i < uvSize; ++i) {
+        //v数据
+        *(pic_in->img.plane[1] + i) = *(data + ySize + i * 2 + 1); // u,  1  3   5  7  9
+        *(pic_in->img.plane[2] + i) = *(data + ySize + i * 2); // v,  0   2  4  6  8  10
+    }
+    // NALU单元
+    x264_nal_t *pp_nal;
+    // 编码出来有几个数据 （NALU单元数量）
+    int pi_nal;
+    x264_picture_t pic_out;
+    // 将一张pic_in分解成n个NALU单元
+    x264_encoder_encode(videoCodec, &pp_nal, &pi_nal, pic_in, &pic_out);
+    int sps_len;
+    int pps_len;
+    uint8_t sps[100];
+    uint8_t pps[100];
+     /** 遍历每一个NALU单元
+      * sps,pps是放在I帧单元里的；
+      *【00 00 00 01 [67 sps 00 00 00 01 68 pps](NALU) ...】(流)
+      * 分隔符后紧跟的第一个数字 67, “67 & 0x1F == 7”
+      * 而NAL_SPS的 i_type值就是7，所以是根据67来判断sps的
+      * 同理，68 & 0x1F == 8, 是PPS
+    */
+     for (int i = 0; i < pi_nal; ++i) {
+        // 单独发送的
+        if (pp_nal[i].i_type == NAL_SPS) {
+            sps_len = pp_nal[i].i_payload - 4; // 减4是因为要减去关键帧前面的00 00 00 01
+            memcpy(sps, pp_nal[i].p_payload + 4, sps_len);
+        } else if (pp_nal[i].i_type == NAL_PPS) {
+            pps_len = pp_nal[i].i_payload - 4;
+            memcpy(pps, pp_nal[i].p_payload + 4, pps_len);
+            // 单独发送sps,pps
+            sendSpsPps(sps, pps, sps_len, pps_len);
+        } else { // 非关键帧
+            sendFrame(pp_nal[i].i_type, pp_nal[i].p_payload, pp_nal[i].i_payload);
+        }
+    }
+}
+
+
+void  VideoChannelC::sendSpsPps(uint8_t *sps, uint8_t *pps, int sps_len, int pps_len){
+    int bodySize = 13 + sps_len + 3 + pps_len;
+    RTMPPacket *packet = new RTMPPacket;
+    RTMPPacket_Alloc(packet,bodySize);
+
+    int i = 0;
+    //固定头
+    packet->m_body[i++] = 0x17; // 关键帧
+    //类型
+    packet->m_body[i++] = 0x00;
+    //composition time 0x000000
+    packet->m_body[i++] = 0x00;
+    packet->m_body[i++] = 0x00;
+    packet->m_body[i++] = 0x00;
+
+    //版本
+    packet->m_body[i++] = 0x01;
+    //编码规格
+    packet->m_body[i++] = sps[1]; // prifile 也就是00 00 00 01后面的67
+    packet->m_body[i++] = sps[2]; // 兼容性 00，就是67 64后面的00
+    packet->m_body[i++] = sps[3]; // prifile编码级别 67 64 00 后面的33
+    packet->m_body[i++] = 0xFF;   // 包长使用的字节数 0xFF固定
+
+    //整个sps
+    packet->m_body[i++] = 0xE1; // sps个数
+    //sps长度
+    packet->m_body[i++] = (sps_len >> 8) & 0xff;
+    packet->m_body[i++] = sps_len & 0xff;
+    memcpy(&packet->m_body[i], sps, sps_len);
+    i += sps_len;
+
+    //pps
+    packet->m_body[i++] = 0x01; // 分隔符
+    packet->m_body[i++] = (pps_len >> 8) & 0xff; //先取高8位再取低8位
+    packet->m_body[i++] = (pps_len) & 0xff;
+    memcpy(&packet->m_body[i], pps, pps_len);
+
+    //视频
+    packet->m_packetType = RTMP_PACKET_TYPE_VIDEO;
+    packet->m_nBodySize = bodySize;
+    //随意分配一个管道（尽量避开rtmp.c中使用的）
+    packet->m_nChannel = 10;
+    //sps pps没有时间戳
+    packet->m_nTimeStamp = 0;
+    //不使用绝对时间
+    packet->m_hasAbsTimestamp = 0;
+    packet->m_headerType = RTMP_PACKET_SIZE_MEDIUM;
+
+    videoCallback(packet);
+}
