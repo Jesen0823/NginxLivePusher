@@ -1,13 +1,18 @@
 package com.jesen.nginxlivepusher
 
+import android.hardware.Camera
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.widget.TextView
+import com.jesen.nginxlivepusher.av.LivePusher
 import com.jesen.nginxlivepusher.databinding.ActivityMainBinding
 
 class MainActivity : AppCompatActivity() {
 
+    private val RTMP_ADDRES = "rtmp://47.107.132.117/myapp"
+
     private lateinit var binding: ActivityMainBinding
+    private lateinit var livePusher: LivePusher
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -15,20 +20,24 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Example of a call to a native method
-        binding.sampleText.text = stringFromJNI()
+        livePusher = LivePusher(this, 800,400, 800_000,10, Camera.CameraInfo.CAMERA_FACING_BACK)
+        // 设置摄像头预览界面
+        livePusher.setPreviewDisplay(binding.surfaceView.holder)
+
+        binding.switchCamera.setOnClickListener {
+            livePusher.switchCamera()
+        }
+        binding.startLive.setOnClickListener {
+            livePusher.startLive(RTMP_ADDRES)
+        }
+
+        binding.stopLive.setOnClickListener {
+            livePusher.release()
+        }
     }
 
-    /**
-     * A native method that is implemented by the 'nginxlivepusher' native library,
-     * which is packaged with this application.
-     */
-    external fun stringFromJNI(): String
-
-    companion object {
-        // Used to load the 'nginxlivepusher' library on application startup.
-        init {
-            System.loadLibrary("nginxlivepusher")
-        }
+    override fun onDestroy() {
+        super.onDestroy()
+        livePusher.release()
     }
 }
