@@ -49,7 +49,8 @@ class LivePusher(
     external fun native_start(path: String)
     external fun native_pushVideo(data: ByteArray)
     external fun native_pushAudio(bytes: ByteArray)
-    external fun native_setAudioEncInfo(i: Int, channels: Int)
+    // 音频采样位数，声道数
+    external fun native_setAudioEncInfo(sampleRateInHz: Int, channels: Int)
 
     external fun getInputSamples(): Int
 

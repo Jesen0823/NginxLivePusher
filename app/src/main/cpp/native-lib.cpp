@@ -6,13 +6,16 @@
 #include "video_channel.h"
 #include "macro.h"
 #include "safe_queue.h"
+#include "audio_channel.h"
 
 VideoChannelC *videoChannel;
+AudioChannelC *audioChannel;
 int isStart = 0;
 
 pthread_t pid;
 int32_t start_time;
 int readyPushing = 0; // 开始推流的标记位
+
 SafeQueue<RTMPPacket *> packetQueue;
 
 void releasePacket(RTMPPacket *packet){
@@ -20,6 +23,16 @@ void releasePacket(RTMPPacket *packet){
         RTMPPacket_Free(packet);
         delete packet;
         packet = 0;
+    }
+}
+
+void callback(RTMPPacket *packet){
+    if (packet){
+        // 设置时间戳
+        packet->m_nTimeStamp = RTMP_GetTime() - start_time;
+        // 加入队列
+        packetQueue.put(packet);
+        LOGE("callback the Queue size:",packetQueue.size());
     }
 }
 
@@ -58,6 +71,7 @@ void *start(void *args){
     readyPushing = 1; //可以开始推流了
     packetQueue.setWork(1);
     RTMPPacket *packet = 0;
+    callback(audioChannel->getAudioTag());
     while (readyPushing){
         // 队列中取数据(packet)
         packetQueue.get(packet);
@@ -95,21 +109,13 @@ Java_com_jesen_nginxlivepusher_MainActivity_stringFromJNI(
     return env->NewStringUTF(hello.c_str());
 }
 
-void callback(RTMPPacket *packet){
-    if (packet){
-        // 设置时间戳
-        packet->m_nTimeStamp = RTMP_GetTime() - start_time;
-        // 加入队列
-        packetQueue.put(packet);
-    }
-}
-
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_jesen_nginxlivepusher_av_LivePusher_native_1init(JNIEnv *env, jobject thiz) {
     videoChannel = new VideoChannelC;
     videoChannel->setVideoCallback(callback);
-
+    audioChannel = new AudioChannelC();
+    audioChannel->setAudioCallback(callback);
 }
 extern "C"
 JNIEXPORT void JNICALL
@@ -161,22 +167,35 @@ Java_com_jesen_nginxlivepusher_av_LivePusher_native_1pushVideo(JNIEnv *env, jobj
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_jesen_nginxlivepusher_av_LivePusher_native_1pushAudio(JNIEnv *env, jobject thiz,
-                                                               jbyteArray bytes) {
-    // TODO: implement native_pushAudio()
+                                                               jbyteArray bytes_) {
+   jbyte *data = env->GetByteArrayElements(bytes_,NULL);
+
+   if (!audioChannel || !readyPushing){
+       return;
+   }
+    audioChannel->encodeData(data);
+
+   env->ReleaseByteArrayElements(bytes_,data,0);
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_jesen_nginxlivepusher_av_LivePusher_native_1setAudioEncInfo(JNIEnv *env, jobject thiz,
-                                                                     jint i, jint channels) {
-    // TODO: implement native_setAudioEncInfo()
+                                                                     jint sampleRateInHz, jint channels) {
+    if (audioChannel){
+        audioChannel->setAudioEncInfo(sampleRateInHz, channels);
+    }
 }
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_jesen_nginxlivepusher_av_LivePusher_getInputSamples(JNIEnv *env, jobject thiz) {
-    // TODO: implement getInputSamples()
+    if (audioChannel) {
+        return audioChannel->getInputSamples();
+    }
+    return -1;
 }
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_jesen_nginxlivepusher_av_LivePusher_native_1release(JNIEnv *env, jobject thiz) {
-    // TODO: implement native_release()
+    DELETE(videoChannel);
+    DELETE(audioChannel);
 }
