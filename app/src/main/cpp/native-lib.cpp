@@ -1,6 +1,5 @@
 #include <jni.h>
 #include <string>
-#include <pthread.h>
 #include "x264.h"
 #include "librtmp/rtmp.h"
 #include "video_channel.h"
@@ -116,11 +115,6 @@ Java_com_jesen_nginxlivepusher_av_LivePusher_native_1init(JNIEnv *env, jobject t
     videoChannel->setVideoCallback(callback);
     audioChannel = new AudioChannelC();
     audioChannel->setAudioCallback(callback);
-}
-extern "C"
-JNIEXPORT void JNICALL
-Java_com_jesen_nginxlivepusher_av_LivePusher_native_1start__(JNIEnv *env, jobject thiz) {
-    // TODO: implement native_start()
 }
 
 extern "C"

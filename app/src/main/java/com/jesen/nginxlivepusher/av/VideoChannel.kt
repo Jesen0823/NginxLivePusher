@@ -15,9 +15,18 @@ class VideoChannel(
     private val mFps: Int,
     cameraId: Int
 ) : Camera.PreviewCallback, CameraHelper.OnChangedSizeListener {
-    private val cameraHelper: CameraHelper
+    private val cameraHelper: CameraHelper = CameraHelper(activity, cameraId, width, height)
     private var isLiving = false
-    private var livePusher: LivePusher
+    private var livePusher: LivePusher = livePusher
+
+    companion object {
+        private const val TAG = "VideoChannel"
+    }
+
+    init {
+        cameraHelper.setPreviewCallback(this)
+        cameraHelper.setOnChangedSizeListener(this)
+    }
 
     //data   nv21
     override fun onPreviewFrame(data: ByteArray?, camera: Camera?) {
@@ -47,16 +56,5 @@ class VideoChannel(
 
     fun release() {
         cameraHelper.release()
-    }
-
-    companion object {
-        private const val TAG = "tuch"
-    }
-
-    init {
-        this.livePusher = livePusher
-        cameraHelper = CameraHelper(activity, cameraId, width, height)
-        cameraHelper.setPreviewCallback(this)
-        cameraHelper.setOnChangedSizeListener(this)
     }
 }

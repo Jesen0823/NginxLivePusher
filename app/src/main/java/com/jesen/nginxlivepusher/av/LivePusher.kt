@@ -44,7 +44,6 @@ class LivePusher(
     }
 
     external fun native_init()
-    external fun native_start()
     external fun native_setVideoEncInfo(width: Int, height: Int, fps: Int, bitrate: Int)
     external fun native_start(path: String)
     external fun native_pushVideo(data: ByteArray)

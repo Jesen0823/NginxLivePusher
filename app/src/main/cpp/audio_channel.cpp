@@ -2,8 +2,10 @@
 // Created by X1 Carbon on 2021/8/13.
 //
 #include <pty.h>
+#include <jni.h>
 #include <cstring>
 #include "audio_channel.h"
+#include "librtmp/rtmp.h"
 #include "faac.h"
 #include "macro.h"
 

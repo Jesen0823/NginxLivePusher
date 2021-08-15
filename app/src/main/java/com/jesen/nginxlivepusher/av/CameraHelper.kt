@@ -118,11 +118,23 @@ class CameraHelper(activity: Activity, cameraId: Int, width: Int, height: Int) :
         startPreview()
     }
 
+    private fun test(){
+        val previewSizes: List<Camera.Size> = mCamera!!.parameters.supportedPreviewSizes
+        for (i in previewSizes.indices) {
+            val psize: Camera.Size = previewSizes[i]
+            Log.i(
+                TAG + "initCamera",
+                "PreviewSize,width: " + psize.width.toString() + " height: " + psize.height
+            )
+        }
+    }
+
     private fun startPreview() {
         mCamera?.let {
             try {
                 //获得camera对象
                 mCamera = Camera.open(mCameraId)
+                test()
                 //配置camera的属性
                 val parameters = it.getParameters()
                 //设置预览数据格式为nv21

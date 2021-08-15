@@ -19,7 +19,7 @@ private const val MY_PERMISSIONS_CODE = 1
 
 class MainActivity : AppCompatActivity() {
 
-    private val RTMP_ADDRES = "rtmp://47.107.132.117/myapp"
+    private val RTMP_ADDRES = "rtmp://192.168.202.128:1935/rtmplive"
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var livePusher: LivePusher

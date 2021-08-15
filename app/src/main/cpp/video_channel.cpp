@@ -5,6 +5,7 @@
 #include <pty.h>
 #include <cstring>
 #include "video_channel.h"
+#include "librtmp/rtmp.h"
 #include "macro.h"
 
 void VideoChannelC::sendFrame(int type, uint8_t *payload, int i_payload) {
@@ -201,4 +202,15 @@ void  VideoChannelC::sendSpsPps(uint8_t *sps, uint8_t *pps, int sps_len, int pps
     packet->m_headerType = RTMP_PACKET_SIZE_MEDIUM;
 
     videoCallback(packet);
+}
+
+VideoChannelC::~VideoChannelC() {
+    if (videoCodec) {
+        x264_encoder_close(videoCodec);
+        videoCodec = 0;
+    }
+    if (pic_in) {
+        x264_picture_clean(pic_in);
+        DELETE(pic_in);
+    }
 }

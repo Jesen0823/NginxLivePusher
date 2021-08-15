@@ -13,10 +13,9 @@ class VideoChannelC {
     typedef void (*VideoCallback)(RTMPPacket *packet);
 
 public:
+
     void setVideoEncInfo(int width, int height, int fps, int bitrate);
-
     ~VideoChannelC();
-
     void encodeData(int8_t *data);
 
     void setVideoCallback(VideoCallback videoCallback);
